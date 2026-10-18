@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # FCI Example Code
 # Author: Peng Bao <baopeng@iccas.ac.cn>
 

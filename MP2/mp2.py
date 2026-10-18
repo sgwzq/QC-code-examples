@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # MP2 Code Example
 # Author: Peng Bao <baopeng@iccas.ac.cn>
+# Modified by: Ziqiu Wang <sgwzq0810@gmail.com>
 
 import numpy
+import itertools
 from pyscf import gto, scf, mp
 
 ############### MP2 in PySCF to compare   #############
-mol = gto.M(atom='H 0 0 0; F 0 0 1.1', basis='cc-pvdz')
+mol = gto.M(atom='H 0 0 0; F 0 0 1.1', basis='sto-3g')
 
 mf = scf.RHF(mol)
 mf.kernel()
@@ -17,27 +19,29 @@ mp2.kernel()
 
 #################### MP2 Code Example ####################
 mo=mf.mo_coeff
-orben=mf.mo_energy
+mo_energy=mf.mo_energy
 
 nocc = mol.nelectron // 2
-nvirt = mo.shape[0] - nocc
+nvir = mo.shape[0] - nocc
+mo_occ = mo[:, :nocc]
+mo_vir = mo[:, nocc:]
 
-eri2e = mol.intor('int2e')
-eri2em = numpy.einsum('ui,va,xj,yb,uvxy->iajb', mo[:,:nocc], mo[:,nocc:], mo[:,:nocc], mo[:,nocc:], eri2e)
+ao_eri = mol.intor('int2e')
+mo_eri = numpy.einsum(
+        'ui,va,xj,yb, uvxy->iajb',
+        mo_occ, mo_vir, mo_occ, mo_vir, ao_eri,
+        )
 
 Jintm = 0.0
 Kintm = 0.0
-for i in range(nocc):
-    for a in range(nvirt):
-        for j in range(nocc):
-            for b in range(nvirt):
-                Jintm += eri2em[i,a,j,b]*eri2em[i,a,j,b]/(orben[i]+orben[j]-orben[a+nocc]-orben[b+nocc])
-                Kintm -= eri2em[i,a,j,b]*eri2em[j,a,i,b]/(orben[i]+orben[j]-orben[a+nocc]-orben[b+nocc])
-E_corr = 2*Jintm + Kintm
-print('=========================================================\n', 'Simple MP2 f ', 'E_corr = ', E_corr)
+# Unwinding nested for loop with itertools.product function.
+# See https://docs.python.org/3/library/itertools.html#itertools.product
+for i, a, j, b in itertools.product(range(nocc), range(nvir), repeat = 2):
+    devisor = (
+            mo_energy[i] + mo_energy[j]
+            - mo_energy[a+nocc] - mo_energy[b+nocc])
+    Jintm += mo_eri[i,a,j,b] * mo_eri[i,a,j,b] / devisor
+    Kintm += mo_eri[i,a,j,b] * mo_eri[j,a,i,b] / devisor
 
-e_i = 1 / (orben[:nocc].reshape(-1, 1, 1, 1) - orben[nocc:].reshape(1,-1, 1, 1) + orben[:nocc].reshape(1, 1, -1, 1) - orben[nocc:].reshape(1, 1, 1, -1))
-Jintm = numpy.einsum('iajb,iajb,iajb->', eri2em, eri2em, e_i)
-Kintm = -numpy.einsum('iajb,jaib,iajb->', eri2em, eri2em, e_i)
-E_corr = 2*Jintm + Kintm
-print('=========================================================\n', 'Simple MP2 v ', 'E_corr = ', E_corr)
+E_corr = 2*Jintm - Kintm
+print('Simple MP2', 'E_corr = ', E_corr)

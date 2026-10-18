@@ -6,8 +6,6 @@ import numpy
 import scipy.linalg
 from pyscf import gto, scf
 
-############### HF in PySCF to compare ##############
-#mol = gto.M(atom='H 0 0 0; F 0 0 1.1', basis='cc-pvdz')
 mol = gto.M(atom='''
  H          2.031885   -1.178162    0.0000
  H          2.727235    0.545776   -0.0000
@@ -20,6 +18,7 @@ mol = gto.M(atom='''
  H         -2.727235   -0.545776    0.0000
  H         -2.031885    1.178162   -0.0000
 ''', basis='cc-pvdz')
+############### HF in PySCF to compare ##############
 mf = scf.RHF(mol)
 mf.kernel()
 print('Reference HF total energy =', mf.e_tot)
@@ -28,20 +27,6 @@ print('Reference HF total energy =', mf.e_tot)
 #################### HF-DIIS Code Example ####################
 # RHF. Only need structure information of molecule and electronic integrals 
   
-#mol = gto.M(atom='H 0 0 0; F 0 0 1.1', basis='cc-pvdz')
-mol = gto.M(atom='''
- H          2.031885   -1.178162    0.0000
- H          2.727235    0.545776   -0.0000
- C          1.856825   -0.104575   -0.0000
- C          0.568770    0.416868   -0.0000
- H          0.432847    1.496788   -0.0000
- H         -0.432847   -1.496788    0.0000
- C         -0.568770   -0.416868    0.0000
- C         -1.856825    0.104575    0.0000
- H         -2.727235   -0.545776    0.0000
- H         -2.031885    1.178162   -0.0000
-''', basis='cc-pvdz')
-
 hcore = mol.intor_symmetric('int1e_kin') + mol.intor_symmetric('int1e_nuc')
 
 s1e = mol.intor_symmetric('int1e_ovlp')
@@ -52,7 +37,7 @@ eri = mol.intor('int2e').reshape(nao,nao,nao,nao)
 
 nocc = mol.nelectron // 2
 
-# diis ref: 1. Pulay, P. Chem. Phys. Lett. 73, 393 (1980). 2. http://vergil.chemistry.gatech.edu/notes/diis/
+# diis ref: 1. Pulay, P. Chem. Phys. Lett. 73, 393 (1980). 
 _err = []
 _vec = []
 def diis(f, errvec):
@@ -77,50 +62,20 @@ def diis(f, errvec):
         return fnew
 
 def energy_nuc(mol):
-
     charges = mol.atom_charges()
-
     coords = mol.atom_coords()
-
     rr = numpy.linalg.norm(coords.reshape(-1,1,3) - coords, axis=2)
-
     rr[numpy.diag_indices_from(rr)] = 1e200
-
     e = numpy.einsum('i,ij,j->', charges, 1./rr, charges) * .5
-
     return e
 
-def get_dm(fock):
-
-    mo_energy, mo_coeff = scipy.linalg.eigh(fock, s1e)
-
-    e_idx = numpy.argsort(mo_energy)
-
-    mo_coeff = mo_coeff[:,e_idx]
-
-    dm = mo_coeff[:,:nocc]@mo_coeff[:,:nocc].T
-
-    return dm, mo_coeff
-
-#dm = mf.get_init_guess(mol, mf.init_guess)
-
-dm, mo_coeff = get_dm(hcore)
-
 scf_conv = False
-
 cycle = 0
-
-e_tot = 0
-
 #1 mf_diis = mf.DIIS(mf, mf.diis_file)
 #4 fock_last = hcore
-
 while not scf_conv and cycle < 50:
-
     dm_last = dm
-
     last_hf_e = e_tot
-
     fock = hcore + 2 * numpy.einsum('ijkl,ji->kl', eri, dm) - numpy.einsum('ijkl,jk->il', eri, dm)
 
     #defalt: Pulay, P. J. Comput. Chem. 3, 556 (1982).

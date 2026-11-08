@@ -2,10 +2,11 @@
 
 ## About Computational Quantum Chemistry
 The quickest way to get started with Computational Quantum Chemistry (based on Hartree-Fock) should be   
-* Hartree-Fock -> some add-ons like DIIS -> Configuration Interaction Methods like CIS -> some add-ons like spin-adaptation -> FCI
-* Hartree-Fock -> Coupled Cluster
+* Hartree-Fock -> DIIS 
+* Hartree-Fock -> CIS/CISD -> FCI
 * Hartree-Fock -> MP2
-* Hartree-Fock -> Density Functional Theory -> Double-Hybrid Functionals
+* Hartree-Fock -> Density Functional Theory -> MP2 -> Double-Hybrid Functionals
+* Hartree-Fock -> Coupled Cluster
 
 Many Textbooks have detailed introduction about these methods, here is a brief list:  
 * Szabo, A. and Ostlund, N.S. (1996) Modern Quantum Chemistry.

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # MP2 Code Example
 # Author: Peng Bao <baopeng@iccas.ac.cn>
 # Modified by: Ziqiu Wang <sgwzq0810@gmail.com>
@@ -7,9 +7,9 @@ import numpy
 import itertools
 from pyscf import gto, scf, mp
 
-############### MP2 in PySCF to compare   #############
 mol = gto.M(atom='H 0 0 0; F 0 0 1.1', basis='sto-3g')
 
+############### MP2 in PySCF to compare   #############
 mf = scf.RHF(mol)
 mf.kernel()
 
@@ -18,13 +18,13 @@ mp2.kernel()
 ######################################################
 
 #################### MP2 Code Example ####################
-mo=mf.mo_coeff
+mo_coeff=mf.mo_coeff
 mo_energy=mf.mo_energy
 
 nocc = mol.nelectron // 2
-nvir = mo.shape[0] - nocc
-mo_occ = mo[:, :nocc]
-mo_vir = mo[:, nocc:]
+nvir = mo_coeff.shape[0] - nocc
+mo_occ = mo_coeff[:, :nocc]
+mo_vir = mo_coeff[:, nocc:]
 
 ao_eri = mol.intor('int2e')
 mo_eri = numpy.einsum(
